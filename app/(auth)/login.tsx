@@ -7,6 +7,7 @@ import { TactileButton } from '../../components/ui/TactileButton';
 import { Colors, Layout } from '../../constants/Colors';
 import { useStore } from '../../store/useStore';
 import { ArrowLeft, Mail, Lock } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 const { width } = Dimensions.get('window');
 
@@ -17,7 +18,9 @@ export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signIn } = useStore();
+    const { signIn } = useStore(useShallow(state => ({
+  signIn: state.signIn
+})));
 
     const handleLogin = async () => {
         if (!email || !password) return Alert.alert('Erreur', 'Veuillez tout remplir');

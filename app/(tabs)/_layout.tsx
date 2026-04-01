@@ -5,6 +5,7 @@ import { Colors } from '../../constants/Colors';
 import { TabBar } from '../../components/ui/TabBar';
 import { useStore } from '../../store/useStore';
 import { DailyBonusModal } from '../../components/features/DailyBonusModal';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Layout des Onglets (Tabs Layout).
@@ -12,7 +13,10 @@ import { DailyBonusModal } from '../../components/features/DailyBonusModal';
  * Barre de navigation épurée et moderne, entièrement refaite avec TabBar custom.
  */
 export default function TabLayout() {
-    const { profile, claimDailyBonus } = useStore();
+    const { profile, claimDailyBonus } = useStore(useShallow(state => ({
+  profile: state.profile,
+  claimDailyBonus: state.claimDailyBonus
+})));
     const [showBonus, setShowBonus] = useState(false);
     const [bonusAmount, setBonusAmount] = useState(50); // Default, could be dynamic
 

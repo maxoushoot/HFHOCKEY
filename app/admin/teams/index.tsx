@@ -37,7 +37,7 @@ export default function AdminTeams() {
         setLoading(true);
         const { data, error } = await supabase
             .from('teams')
-            .select('*')
+            .select('id, name, slug, color, secondary_color, logo_url')
             .order('name');
 
         if (error) Alert.alert('Erreur', error.message);

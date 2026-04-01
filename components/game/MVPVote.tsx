@@ -8,6 +8,7 @@ import { useConfetti } from '../../app/_layout';
 import * as Haptics from 'expo-haptics';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withSequence } from 'react-native-reanimated';
 import { useStore } from '../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 
 interface MVPVoteProps {
     homeTeamId?: string;
@@ -18,7 +19,10 @@ interface MVPVoteProps {
 }
 
 export function MVPVote({ homeTeamId, awayTeamId, onVote, initialVotedId, readOnly = false }: MVPVoteProps) {
-    const { players, fetchPlayersForMatch } = useStore();
+    const { players, fetchPlayersForMatch } = useStore(useShallow(state => ({
+  players: state.players,
+  fetchPlayersForMatch: state.fetchPlayersForMatch
+})));
     const [votedId, setVotedId] = useState<string | null>(initialVotedId || null);
     const [activeTab, setActiveTab] = useState<'home' | 'away'>('home');
     const scale = useSharedValue(1);

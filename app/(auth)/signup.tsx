@@ -7,6 +7,7 @@ import { TactileButton } from '../../components/ui/TactileButton';
 import { Colors, Layout } from '../../constants/Colors';
 import { useStore } from '../../store/useStore';
 import { ArrowLeft, User, Mail, Lock } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 const { width } = Dimensions.get('window');
 
@@ -18,7 +19,9 @@ export default function SignupScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signUp } = useStore();
+    const { signUp } = useStore(useShallow(state => ({
+  signUp: state.signUp
+})));
 
     const handleSignup = async () => {
         if (!email || !password || !username) {

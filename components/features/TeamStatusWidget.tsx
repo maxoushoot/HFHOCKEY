@@ -7,10 +7,15 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useStore } from '../../store/useStore';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useShallow } from 'zustand/react/shallow';
 
 export const TeamStatusWidget = React.memo(() => {
     const theme = useTheme();
-    const { teams, teamId, matches } = useStore();
+    const { teams, teamId, matches } = useStore(useShallow(state => ({
+  teams: state.teams,
+  teamId: state.teamId,
+  matches: state.matches
+})));
     const [imageError, setImageError] = React.useState(false);
     const router = useRouter();
 

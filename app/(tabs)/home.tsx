@@ -10,12 +10,18 @@ import { TeamStatusWidget } from '../../components/features/TeamStatusWidget';
 import { useStore } from '../../store/useStore';
 import { Colors } from '../../constants/Colors';
 import { Bell, ChevronRight, Trophy, Star } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 /**
  * Écran d'Accueil - Design épuré et premium.
  */
 export default function HomeScreen() {
-    const { matches, fetchMatches, profile, teamId } = useStore();
+    const { matches, fetchMatches, profile, teamId } = useStore(useShallow(state => ({
+  matches: state.matches,
+  fetchMatches: state.fetchMatches,
+  profile: state.profile,
+  teamId: state.teamId
+})));
 
     useEffect(() => {
         fetchMatches();

@@ -6,6 +6,7 @@ import { useStore } from '../../store/useStore';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
 import { Crown, Trophy, User } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 interface LeaderboardEntry {
     rank: number;
@@ -17,7 +18,9 @@ interface LeaderboardEntry {
 }
 
 export function FantasyLeaderboard() {
-    const { profile } = useStore();
+    const { profile } = useStore(useShallow(state => ({
+  profile: state.profile
+})));
     const { card, text, subText, colorMode } = useTheme();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);

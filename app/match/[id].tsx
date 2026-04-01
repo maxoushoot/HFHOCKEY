@@ -24,6 +24,7 @@ import { MatchLineups } from '../../components/match/MatchLineups';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { VotingModal, QuizModal } from '../../components/features/MatchModals';
 import { useMatchData } from '../../hooks/useMatchData';
+import { useShallow } from 'zustand/react/shallow';
 
 const { width } = Dimensions.get('window');
 
@@ -32,7 +33,13 @@ const { width } = Dimensions.get('window');
  */
 export default function MatchDetailScreen() {
     const { id } = useLocalSearchParams();
-    const { mvpVotes, voteMVP, predictions, submitPrediction, gameEvents } = useStore();
+    const { mvpVotes, voteMVP, predictions, submitPrediction, gameEvents } = useStore(useShallow(state => ({
+  mvpVotes: state.mvpVotes,
+  voteMVP: state.voteMVP,
+  predictions: state.predictions,
+  submitPrediction: state.submitPrediction,
+  gameEvents: state.gameEvents
+})));
     const { match, refreshing, onRefresh, mockEvents, mockStats } = useMatchData(id as string);
     const [isVoteModalVisible, setIsVoteModalVisible] = useState(false);
     const [isPredictionModalVisible, setIsPredictionModalVisible] = useState(false);

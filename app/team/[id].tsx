@@ -94,11 +94,20 @@ function RosterSection({ title, players, color, cardColor, textColor, subTextCol
 }
 
 import { useTheme } from '../../context/ThemeContext';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function TeamDetailScreen() {
     const router = useRouter();
     const { id: slug } = useLocalSearchParams();
-    const { teams, matches, players, fetchMatches, fetchTeams, fetchPlayers, profile } = useStore();
+    const { teams, matches, players, fetchMatches, fetchTeams, fetchPlayers, profile } = useStore(useShallow(state => ({
+  teams: state.teams,
+  matches: state.matches,
+  players: state.players,
+  fetchMatches: state.fetchMatches,
+  fetchTeams: state.fetchTeams,
+  fetchPlayers: state.fetchPlayers,
+  profile: state.profile
+})));
     const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
     const { text, card, background, subText, colorMode } = useTheme();
 

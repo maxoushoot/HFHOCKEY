@@ -90,7 +90,7 @@ export const TrophiesList = ({ horizontal = true, achievements, variant = 'list'
         try {
             const { data: allTrophies, error: trophiesError } = await supabase
                 .from('trophies')
-                .select('*')
+                .select('id, name, icon, description, condition_description, created_at')
                 .order('created_at');
 
             if (trophiesError) throw trophiesError;

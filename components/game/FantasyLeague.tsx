@@ -74,11 +74,15 @@ import { useTheme } from '../../context/ThemeContext';
 const INITIAL_BUDGET = 100;
 
 import { FantasyLeaderboard } from './FantasyLeaderboard';
+import { useShallow } from 'zustand/react/shallow';
 
 // ... (keep existing imports)
 
 export function FantasyLeague({ onScore }: FantasyLeagueProps) {
-    const { teams, updateXP } = useStore();
+    const { teams, updateXP } = useStore(useShallow(state => ({
+  teams: state.teams,
+  updateXP: state.updateXP
+})));
     const { text, card, background, subText, colorMode } = useTheme();
     const [activeTab, setActiveTab] = useState<'team' | 'leaderboard'>('team');
     const [gameState, setGameState] = useState<'roster' | 'captain' | 'validating' | 'locked' | 'result'>('roster');

@@ -7,9 +7,12 @@ import { supabase } from '../../lib/supabase';
 import { UserBet } from '../../types/database.types';
 import { useTheme } from '../../context/ThemeContext';
 import { Ticket, Search, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 export function BettingHistoryList() {
-    const { profile } = useStore();
+    const { profile } = useStore(useShallow(state => ({
+  profile: state.profile
+})));
     const { card, text, subText, colorMode } = useTheme();
     const [bets, setBets] = useState<UserBet[]>([]);
     const [isLoading, setIsLoading] = useState(true);

@@ -7,6 +7,7 @@ import { Award, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '../../store/useStore';
 import { getLevel, getNextLevelXP } from '../../utils/game-logic';
+import { useShallow } from 'zustand/react/shallow';
 
 interface XPBarProps {
     currentXP?: number;
@@ -15,7 +16,9 @@ interface XPBarProps {
 
 export const XPBar = ({ currentXP: propXP, level: propLevel }: XPBarProps) => {
     const { primary } = useTeamTheme();
-    const { profile } = useStore();
+    const { profile } = useStore(useShallow(state => ({
+  profile: state.profile
+})));
 
     // Fallback if no profile
     const currentXP = propXP ?? profile?.xp ?? 0;

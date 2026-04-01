@@ -29,19 +29,19 @@ export function StandingsTable() {
     const fetchStandings = async () => {
         try {
             setLoading(true);
-            const { data: teamsData, error: teamsError } = await supabase.from('teams').select('*');
+            const { data: teamsData, error: teamsError } = await supabase.from('teams').select('id, name');
             if (teamsError) throw teamsError;
 
             const { data: matchesData, error: matchesError } = await supabase
                 .from('matches')
-                .select('*')
+                .select('home_team_id, away_team_id, overtime, penalties, status_short, home_score, away_score')
                 .eq('status', 'finished');
 
             if (matchesError) throw matchesError;
 
             // Initialize stats
             const statsMap = new Map<string, TeamStats>();
-            (teamsData || []).forEach((team: Team) => {
+            (teamsData || []).forEach((team: any) => {
                 statsMap.set(team.id, {
                     team,
                     gp: 0, w: 0, l: 0, otl: 0, pts: 0, gf: 0, ga: 0, diff: 0
@@ -49,7 +49,7 @@ export function StandingsTable() {
             });
 
             // Compute stats
-            matchesData.forEach((match: Match) => {
+            matchesData.forEach((match: any) => {
                 const home = statsMap.get(match.home_team_id);
                 const away = statsMap.get(match.away_team_id);
 

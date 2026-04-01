@@ -3,9 +3,14 @@ import { Stack, useRouter } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { useStore } from '../../store/useStore';
 import { View, ActivityIndicator } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function AdminLayout() {
-    const { profile, session, isLoading } = useStore();
+    const { profile, session, isLoading } = useStore(useShallow(state => ({
+  profile: state.profile,
+  session: state.session,
+  isLoading: state.isLoading
+})));
     const router = useRouter();
 
     useEffect(() => {

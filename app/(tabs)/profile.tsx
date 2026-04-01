@@ -33,10 +33,16 @@ const getLevelTitle = (level: number): string => {
 };
 
 import { useTheme } from '../../context/ThemeContext';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function ProfileScreen() {
     const router = useRouter();
-    const { profile, signOut, updateAvatar, achievements } = useStore();
+    const { profile, signOut, updateAvatar, achievements } = useStore(useShallow(state => ({
+  profile: state.profile,
+  signOut: state.signOut,
+  updateAvatar: state.updateAvatar,
+  achievements: state.achievements
+})));
     const { colorMode, toggleColorMode, card, text, subText } = useTheme();
     const [showAvatarModal, setShowAvatarModal] = React.useState(false);
     const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);

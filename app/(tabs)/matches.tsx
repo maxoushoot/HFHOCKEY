@@ -13,6 +13,7 @@ import { Calendar, Trophy, Users } from 'lucide-react-native';
 import { MatchListSkeleton } from '../../components/features/MatchListSkeleton';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
+import { useShallow } from 'zustand/react/shallow';
 
 type TabType = 'calendar' | 'teams' | 'players';
 
@@ -27,7 +28,11 @@ const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
  */
 export default function MatchesScreen() {
     const [tab, setTab] = useState<TabType>('calendar');
-    const { matches, fetchMatches, isLoading } = useStore();
+    const { matches, fetchMatches, isLoading } = useStore(useShallow(state => ({
+  matches: state.matches,
+  fetchMatches: state.fetchMatches,
+  isLoading: state.isLoading
+})));
     const { primary } = useTeamTheme();
     const { colorMode } = useTheme();
 

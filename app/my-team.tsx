@@ -15,10 +15,20 @@ import { SubscriptionModal } from '../components/features/SubscriptionModal';
 import { Lock, Sparkles } from 'lucide-react-native';
 import { Bounceable } from '../components/ui/Bounceable';
 import { RosterSection } from '../components/features/RosterSection';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function MyTeamScreen() {
     const router = useRouter();
-    const { teamId, teams, matches, players, fetchMatches, fetchTeams, fetchPlayersForMatch, profile } = useStore();
+    const { teamId, teams, matches, players, fetchMatches, fetchTeams, fetchPlayersForMatch, profile } = useStore(useShallow(state => ({
+  teamId: state.teamId,
+  teams: state.teams,
+  matches: state.matches,
+  players: state.players,
+  fetchMatches: state.fetchMatches,
+  fetchTeams: state.fetchTeams,
+  fetchPlayersForMatch: state.fetchPlayersForMatch,
+  profile: state.profile
+})));
     const [showSubscriptionModal, setShowSubscriptionModal] = React.useState(false);
 
     useEffect(() => {

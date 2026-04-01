@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
+import { useShallow } from 'zustand/react/shallow';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -58,7 +59,10 @@ const GAMES = [
  * Games Hub - Full screen game modes with XP rewards.
  */
 export default function GameScreen() {
-    const { profile, updateXP } = useStore();
+    const { profile, updateXP } = useStore(useShallow(state => ({
+  profile: state.profile,
+  updateXP: state.updateXP
+})));
     const [activeGame, setActiveGame] = useState<GameType>(null);
     const [lastScore, setLastScore] = useState<number | null>(null);
     const insets = useSafeAreaInsets();

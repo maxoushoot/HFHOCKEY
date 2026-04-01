@@ -8,6 +8,7 @@ import { Bounceable } from '../ui/Bounceable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useConfetti } from '../../app/_layout';
 import { useStore } from '../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 
 interface SubscriptionModalProps {
     visible: boolean;
@@ -16,7 +17,11 @@ interface SubscriptionModalProps {
 
 export function SubscriptionModal({ visible, onClose }: SubscriptionModalProps) {
     const { explode } = useConfetti();
-    const { subscribeToPremium, fetchProfile, session } = useStore();
+    const { subscribeToPremium, fetchProfile, session } = useStore(useShallow(state => ({
+  subscribeToPremium: state.subscribeToPremium,
+  fetchProfile: state.fetchProfile,
+  session: state.session
+})));
     const [loading, setLoading] = useState(false);
 
     const features = [

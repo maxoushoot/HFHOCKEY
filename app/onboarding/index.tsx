@@ -7,6 +7,7 @@ import { TactileButton } from '../../components/ui/TactileButton';
 import { Colors, Layout } from '../../constants/Colors';
 import { useStore } from '../../store/useStore';
 import { Check } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 const { width } = Dimensions.get('window');
 
@@ -57,7 +58,11 @@ const TeamGridItem = React.memo(({ team, isSelected, onPress }: { team: any, isS
 
 export default function OnboardingScreen() {
     const [selectedTeamSlug, setSelectedTeamSlug] = useState<string | null>(null);
-    const { setFavoriteTeam, teams, fetchTeams } = useStore();
+    const { setFavoriteTeam, teams, fetchTeams } = useStore(useShallow(state => ({
+  setFavoriteTeam: state.setFavoriteTeam,
+  teams: state.teams,
+  fetchTeams: state.fetchTeams
+})));
 
     useEffect(() => {
         fetchTeams();

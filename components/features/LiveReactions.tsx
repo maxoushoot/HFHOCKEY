@@ -27,13 +27,16 @@ const { height, width } = Dimensions.get('window');
 
 import { useStore } from '../../store/useStore';
 import { SubscriptionModal } from './SubscriptionModal';
+import { useShallow } from 'zustand/react/shallow';
 
 interface LiveReactionsProps {
     matchId?: string;
 }
 
 export function LiveReactions({ matchId }: LiveReactionsProps) {
-    const { profile } = useStore();
+    const { profile } = useStore(useShallow(state => ({
+  profile: state.profile
+})));
     const [showPaywall, setShowPaywall] = useState(false);
     const [floaters, setFloaters] = useState<{ id: number, reaction: typeof REACTIONS[0], x: number }[]>([]);
     const [counts, setCounts] = useState<Record<string, number>>(

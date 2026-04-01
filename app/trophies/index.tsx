@@ -7,10 +7,13 @@ import { useTheme } from '../../context/ThemeContext';
 import { useStore } from '../../store/useStore';
 import { TrophiesList } from '../../components/features/TrophiesList';
 import { Lock, Unlock } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function TrophiesScreen() {
     const { text, card, colorMode } = useTheme();
-    const { achievements } = useStore();
+    const { achievements } = useStore(useShallow(state => ({
+  achievements: state.achievements
+})));
 
     return (
         <View style={[styles.container, { backgroundColor: colorMode === 'dark' ? Colors.night : Colors.background }]}>
