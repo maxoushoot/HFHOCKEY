@@ -119,6 +119,29 @@ export default function TeamDetailScreen() {
 
     const team = teams.find(t => t.slug === slug) || teams.find(t => t.id === slug) || null;
 
+    const teamPlayers = useMemo(() => team ? players.filter(p => p.team_id === team.id) : [], [players, team?.id]);
+    const teamMatches = useMemo(() => team ? matches.filter((m: IMatch) =>
+        m.home_team_id === team.id || m.away_team_id === team.id ||
+        m.home_team?.slug === team.slug || m.away_team?.slug === team.slug
+    ) : [], [matches, team?.id, team?.slug]);
+
+    const pastMatches = useMemo(() => teamMatches.filter((m: IMatch) => m.status === 'finished').reverse(), [teamMatches]);
+    const futureMatches = useMemo(() => teamMatches.filter((m: IMatch) => m.status === 'scheduled' || m.status === 'live'), [teamMatches]);
+    const lastMatch = pastMatches[0];
+
+    // ─── Leaders: Top Scorer, Top Pointer, Top Goalie ───
+    const leaders = useMemo(() => {
+        if (!teamPlayers.length) return { topScorer: null, topPointer: null, topGoalie: null };
+        const skaters = teamPlayers.filter(p => p.position !== 'G');
+        const goalies = teamPlayers.filter(p => p.position === 'G');
+
+        const topScorer = [...skaters].sort((a, b) => (b.goals || 0) - (a.goals || 0))[0] || null;
+        const topPointer = [...skaters].sort((a, b) => ((b.goals || 0) + (b.assists || 0)) - ((a.goals || 0) + (a.assists || 0)))[0] || null;
+        const topGoalie = [...goalies].sort((a, b) => (b.matches_played || 0) - (a.matches_played || 0))[0] || null;
+
+        return { topScorer, topPointer, topGoalie };
+    }, [teamPlayers]);
+
     if (!team) {
         return (
             <LiquidContainer>
@@ -129,28 +152,6 @@ export default function TeamDetailScreen() {
             </LiquidContainer>
         );
     }
-
-    const teamPlayers = useMemo(() => players.filter(p => p.team_id === team.id), [players, team.id]);
-    const teamMatches = useMemo(() => matches.filter((m: IMatch) =>
-        m.home_team_id === team.id || m.away_team_id === team.id ||
-        m.home_team?.slug === team.slug || m.away_team?.slug === team.slug
-    ), [matches, team.id, team.slug]);
-
-    const pastMatches = useMemo(() => teamMatches.filter((m: IMatch) => m.status === 'finished').reverse(), [teamMatches]);
-    const futureMatches = useMemo(() => teamMatches.filter((m: IMatch) => m.status === 'scheduled' || m.status === 'live'), [teamMatches]);
-    const lastMatch = pastMatches[0];
-
-    // ─── Leaders: Top Scorer, Top Pointer, Top Goalie ───
-    const leaders = useMemo(() => {
-        const skaters = teamPlayers.filter(p => p.position !== 'G');
-        const goalies = teamPlayers.filter(p => p.position === 'G');
-
-        const topScorer = [...skaters].sort((a, b) => (b.goals || 0) - (a.goals || 0))[0] || null;
-        const topPointer = [...skaters].sort((a, b) => ((b.goals || 0) + (b.assists || 0)) - ((a.goals || 0) + (a.assists || 0)))[0] || null;
-        const topGoalie = [...goalies].sort((a, b) => (b.matches_played || 0) - (a.matches_played || 0))[0] || null;
-
-        return { topScorer, topPointer, topGoalie };
-    }, [teamPlayers]);
 
     return (
         <LiquidContainer style={{ backgroundColor: background }}>

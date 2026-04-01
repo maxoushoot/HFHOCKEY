@@ -24,7 +24,7 @@ export default function NewsFeed() {
         setLoading(true);
         const { data, error } = await supabase
             .from('news')
-            .select('*')
+            .select('id, title, image_url, published_at, content, url')
             .order('published_at', { ascending: false });
 
         if (error) console.error(error);

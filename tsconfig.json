@@ -4,7 +4,11 @@
     "strict": true
   },
   "exclude": [
-    "supabase/functions/**/*"
+    "supabase/functions/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/*.test.tsx",
+    "**/*.spec.tsx"
   ],
   "include": [
     "**/*.ts",

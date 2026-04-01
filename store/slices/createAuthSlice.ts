@@ -283,7 +283,11 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
             // Cette fonction vérifiera "now()" côté serveur, mettra à jour l'XP et last_daily_bonus_at de manière ACID.
             const { data, error } = await supabase.rpc('claim_daily_bonus', { user_id_param: session.user.id });
 
-            if (error) throw error;
+            if (error) {
+                console.warn('Silent skip - Daily Bonus RPC failed:', error);
+                return { success: false, xpGiven: 0, error: 'Non disponible actuellement' };
+            }
+            
             if (!data?.success) {
                 return { success: false, xpGiven: 0, error: data?.error || 'Déjà réclamé aujourd\'hui' };
             }
@@ -304,8 +308,8 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
 
             return { success: true, xpGiven: XP_REWARD };
         } catch (err: any) {
-            console.error('Error claiming bonus:', err);
-            return { success: false, xpGiven: 0, error: err.message };
+            console.warn('Error claiming bonus gracefully aborted:', err);
+            return { success: false, xpGiven: 0, error: err.message || 'Erreur réseau' };
         }
     },
 });
