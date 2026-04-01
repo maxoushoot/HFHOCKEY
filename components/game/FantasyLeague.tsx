@@ -94,42 +94,51 @@ export function FantasyLeague({ onScore }: FantasyLeagueProps) {
     useEffect(() => {
         const init = async () => {
             setIsLoading(true);
-            // 1. Fetch all players
-            const { data: playersData } = await supabase
-                .from('players')
-                .select(`*, team:team_id (name, logo_url, color)`)
-                .order('goals', { ascending: false })
-                .limit(50);
+            try {
+                // 1. Fetch all players
+                const { data: playersData, error: playersError } = await supabase
+                    .from('players')
+                    .select(`*, team:team_id (name, logo_url, color)`)
+                    .order('goals', { ascending: false })
+                    .limit(50);
+                
+                if (playersError) throw playersError;
 
-            const allPlayers = (playersData || []).map(p => ({
-                ...p,
-                price: calculatePrice(p),
-                points: calculatePoints(p)
-            }));
-            setPlayers(allPlayers);
+                const allPlayers = (playersData || []).map(p => ({
+                    ...p,
+                    price: calculatePrice(p as unknown as Player),
+                    points: calculatePoints(p as unknown as Player)
+                })) as FantasyPlayer[];
+                setPlayers(allPlayers);
 
-            // 2. Fetch my team
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                const { data: team } = await supabase
-                    .from('fantasy_teams')
-                    .select('*, fantasy_team_players(player_id)')
-                    .eq('user_id', user.id)
-                    .single();
+                // 2. Fetch my team
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const { data: team, error: teamError } = await supabase
+                        .from('fantasy_teams')
+                        .select('*, fantasy_team_players(player_id)')
+                        .eq('user_id', user.id)
+                        .maybeSingle();
 
-                if (team) {
-                    setGameState('locked'); // Default to locked if team exists
-                    setCaptainId(team.captain_id);
-                    setBudget(team.budget_remaining);
+                    if (teamError) throw teamError;
 
-                    if (team.fantasy_team_players) {
-                        const playerIds = team.fantasy_team_players.map((ftp: any) => ftp.player_id);
-                        const teamPlayers = allPlayers.filter(p => playerIds.includes(p.id));
-                        setSelectedPlayers(teamPlayers);
+                    if (team) {
+                        setGameState('locked'); // Default to locked if team exists
+                        setCaptainId(team.captain_id);
+                        setBudget(team.budget_remaining);
+
+                        if (team.fantasy_team_players) {
+                            const playerIds = team.fantasy_team_players.map((ftp: { player_id: string }) => ftp.player_id);
+                            const teamPlayers = allPlayers.filter(p => playerIds.includes(p.id));
+                            setSelectedPlayers(teamPlayers);
+                        }
                     }
                 }
+            } catch (err) {
+                console.error('[FantasyLeague] init error:', err);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
         init();
     }, []);
@@ -232,10 +241,11 @@ export function FantasyLeague({ onScore }: FantasyLeagueProps) {
             // Go to Locked state instead of Result directly
             setGameState('locked');
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             console.error(error);
-            alert("Erreur lors de la sauvegarde: " + error.message);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            alert("Erreur lors de la sauvegarde: " + msg);
             setGameState('captain');
         }
     };

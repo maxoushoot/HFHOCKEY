@@ -8,8 +8,15 @@ import { Plus, Send, X } from 'lucide-react-native';
 import { supabase } from '../../../lib/supabase';
 import { Stack } from 'expo-router';
 
+interface NotificationItem {
+    id: string;
+    title: string;
+    body: string;
+    created_at: string;
+}
+
 export default function AdminNotifications() {
-    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -46,21 +53,25 @@ export default function AdminNotifications() {
             created_at: new Date()
         };
 
-        const { error } = await supabase.from('notifications').insert(payload);
+        try {
+            const { error } = await supabase.from('notifications').insert(payload);
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
-        } else {
+            if (error) throw error;
+
             Alert.alert('Succès', 'Notification envoyée (simulée)');
             // In a real app, this would trigger an Edge Function to call Expo Push API
             setModalVisible(false);
             fetchNotifications();
             setTitle('');
             setBody('');
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
-    const renderItem = ({ item }: { item: any }) => (
+    const renderItem = ({ item }: { item: NotificationItem }) => (
         <View style={styles.card}>
             <View style={styles.iconBox}>
                 <Send size={20} color={Colors.white} />

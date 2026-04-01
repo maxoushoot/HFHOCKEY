@@ -27,23 +27,23 @@ export const createDataSlice: StateCreator<StoreState, [], [], DataSlice> = (set
     },
 
     fetchTeams: async () => {
-        const { data } = await supabase.from('teams').select('*');
+        const { data } = await supabase.from('teams').select('id, name, slug, api_id, logo_url, color');
         if (data) set({ teams: data });
     },
 
     fetchPlayers: async () => {
-        const { data } = await supabase.from('players').select('*');
-        if (data) set({ players: data });
+        const { data } = await supabase.from('players').select('id, first_name, last_name, name, team_id, position, jersey_number, avatar_url, goals, assists, matches_played');
+        if (data) set({ players: data as any });
     },
 
     fetchPlayersForMatch: async (homeTeamId: string, awayTeamId: string) => {
         const { data } = await supabase
             .from('players')
-            .select('*')
+            .select('id, first_name, last_name, name, team_id, position, jersey_number, avatar_url, goals, assists, matches_played')
             .in('team_id', [homeTeamId, awayTeamId])
             .order('jersey_number', { ascending: true });
 
-        if (data) set({ players: data });
+        if (data) set({ players: data as any });
     },
 
     fetchGameEvents: async (matchApiId: number) => {
@@ -59,7 +59,7 @@ export const createDataSlice: StateCreator<StoreState, [], [], DataSlice> = (set
             set({ gameEvents: data || [] });
         } catch (err) {
             console.error('[fetchGameEvents] Error:', err);
-            set({ gameEvents: [] });
+            // Mode hors-ligne : ne pas écraser le cache existant (set({ gameEvents: [] }) supprimé)
         }
     },
 

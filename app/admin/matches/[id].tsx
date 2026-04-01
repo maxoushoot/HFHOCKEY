@@ -22,7 +22,8 @@ export default function EditMatch() {
         timer: ''
     });
 
-    const [teams, setTeams] = useState<any[]>([]);
+    interface TeamInfo { id: string; name: string; }
+    const [teams, setTeams] = useState<TeamInfo[]>([]);
 
     useEffect(() => {
         loadTeams();
@@ -52,26 +53,35 @@ export default function EditMatch() {
             away_score: parseInt(form.away_score) || 0,
         };
 
-        let error;
-        if (isNew) {
-            const { error: err } = await supabase.from('matches').insert(payload);
-            error = err;
-        } else {
-            const { error: err } = await supabase.from('matches').update(payload).eq('id', id);
-            error = err;
-        }
+        try {
+            let error;
+            if (isNew) {
+                ({ error } = await supabase.from('matches').insert(payload));
+            } else {
+                ({ error } = await supabase.from('matches').update(payload).eq('id', id));
+            }
 
-        if (error) {
-            Alert.alert("Erreur", error.message);
-        } else {
+            if (error) throw error;
+
             Alert.alert("Succès", "Match enregistré");
             router.back();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
     const deleteMatch = async () => {
-        const { error } = await supabase.from('matches').delete().eq('id', id);
-        if (!error) router.back();
+        try {
+            const { error } = await supabase.from('matches').delete().eq('id', id);
+            if (error) throw error;
+            router.back();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
+        }
     };
 
     return (
@@ -113,7 +123,13 @@ export default function EditMatch() {
     );
 }
 
-const FormInput = ({ label, value, onChangeText, flex }: any) => (
+interface FormInputProps {
+    label: string;
+    value: string;
+    onChangeText: (t: string) => void;
+    flex?: boolean;
+}
+const FormInput = ({ label, value, onChangeText, flex }: FormInputProps) => (
     <View style={{ marginBottom: 12, flex: flex ? 1 : 0, marginRight: flex ? 8 : 0 }}>
         <Typo variant="caption" color={Colors.textSecondary} style={{ marginBottom: 4 }}>{label}</Typo>
         <TextInput

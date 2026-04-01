@@ -37,7 +37,13 @@ export async function tsdbGet<T>(
             const response = await fetch(url.toString(), {
                 method: "GET",
                 headers: { "Accept": "application/json" },
+                signal: AbortSignal.timeout(5000),
             });
+
+            if (response.status === 429) {
+                console.error('[TheSportsDB] 429 Too Many Requests detected. Aborting retries to prevent ban.');
+                throw new Error("HTTP_429");
+            }
 
             if (!response.ok) {
                 throw new Error(`TheSportsDB HTTP ${response.status}: ${response.statusText}`);
@@ -64,6 +70,10 @@ export async function tsdbGet<T>(
         } catch (error) {
             console.warn(`[TheSportsDB] Request failed (attempt ${i + 1}): ${error}`);
             lastError = error;
+
+            if (error instanceof Error && error.message === "HTTP_429") {
+                throw error; // Cancel retries immediately
+            }
 
             if (i < retries - 1) {
                 const delay = Math.pow(2, i) * 1000;

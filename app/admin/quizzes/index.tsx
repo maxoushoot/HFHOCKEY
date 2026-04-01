@@ -8,9 +8,24 @@ import { Plus, Trash2, Edit2, X, Save, ChevronDown, ChevronUp } from 'lucide-rea
 import { supabase } from '../../../lib/supabase';
 import { Stack } from 'expo-router';
 
+interface QuizItem {
+    id: string;
+    title: string;
+    difficulty?: string;
+}
+
+interface QuestionItem {
+    id: string;
+    quiz_id: string;
+    question: string;
+    options: string | string[];
+    correct_answer: number;
+    explanation?: string;
+}
+
 export default function AdminQuizzes() {
-    const [quizzes, setQuizzes] = useState<any[]>([]);
-    const [questions, setQuestions] = useState<any[]>([]);
+    const [quizzes, setQuizzes] = useState<QuizItem[]>([]);
+    const [questions, setQuestions] = useState<QuestionItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null);
@@ -65,19 +80,23 @@ export default function AdminQuizzes() {
             explanation
         };
 
-        let error;
-        if (editingId) {
-            ({ error } = await supabase.from('quiz_questions').update(payload).eq('id', editingId));
-        } else {
-            ({ error } = await supabase.from('quiz_questions').insert(payload));
-        }
+        try {
+            let error;
+            if (editingId) {
+                ({ error } = await supabase.from('quiz_questions').update(payload).eq('id', editingId));
+            } else {
+                ({ error } = await supabase.from('quiz_questions').insert(payload));
+            }
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
-        } else {
+            if (error) throw error;
+
             setModalVisible(false);
             fetchData();
             resetForm();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
@@ -88,15 +107,21 @@ export default function AdminQuizzes() {
                 text: 'Supprimer',
                 style: 'destructive',
                 onPress: async () => {
-                    const { error } = await supabase.from('quiz_questions').delete().eq('id', id);
-                    if (error) Alert.alert('Erreur', error.message);
-                    else fetchData();
+                    try {
+                        const { error } = await supabase.from('quiz_questions').delete().eq('id', id);
+                        if (error) throw error;
+                        fetchData();
+                    } catch (error: unknown) {
+                        console.error(error);
+                        const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                        Alert.alert('Erreur', msg);
+                    }
                 }
             }
         ]);
     };
 
-    const openEditor = (item?: any) => {
+    const openEditor = (item?: QuestionItem) => {
         if (item) {
             setEditingId(item.id);
             setSelectedQuizId(item.quiz_id);
@@ -128,7 +153,7 @@ export default function AdminQuizzes() {
 
     const getQuestionsForQuiz = (quizId: string) => questions.filter(q => q.quiz_id === quizId);
 
-    const renderQuiz = ({ item }: { item: any }) => {
+    const renderQuiz = ({ item }: { item: QuizItem }) => {
         const isExpanded = expandedQuiz === item.id;
         const quizQuestions = getQuestionsForQuiz(item.id);
 

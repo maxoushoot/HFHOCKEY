@@ -7,9 +7,20 @@ import { Colors } from '../../../constants/Colors';
 import { Plus, ChevronRight, Trash2, Star } from 'lucide-react-native';
 import { supabase } from '../../../lib/supabase';
 
+interface MatchItem {
+    id: string;
+    scheduled_at: string;
+    status: string;
+    home_score?: number;
+    away_score?: number;
+    is_featured: boolean;
+    home_team?: any;
+    away_team?: any;
+}
+
 export default function AdminMatchesList() {
     const router = useRouter();
-    const [matches, setMatches] = useState<any[]>([]);
+    const [matches, setMatches] = useState<MatchItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -43,13 +54,17 @@ export default function AdminMatchesList() {
             setMatches(prev => prev.map(m => m.id !== id ? { ...m, is_featured: false } : { ...m, is_featured: true }));
         }
 
-        const { error } = await supabase
-            .from('matches')
-            .update({ is_featured: !currentValue })
-            .eq('id', id);
+        try {
+            const { error } = await supabase
+                .from('matches')
+                .update({ is_featured: !currentValue })
+                .eq('id', id);
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
+            if (error) throw error;
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
             fetchMatches(); // Revert on error
         }
     };
@@ -64,16 +79,22 @@ export default function AdminMatchesList() {
                     text: "Supprimer",
                     style: "destructive",
                     onPress: async () => {
-                        const { error } = await supabase.from('matches').delete().eq('id', id);
-                        if (error) Alert.alert('Erreur', error.message);
-                        else fetchMatches();
+                        try {
+                            const { error } = await supabase.from('matches').delete().eq('id', id);
+                            if (error) throw error;
+                            fetchMatches();
+                        } catch (error: unknown) {
+                            console.error(error);
+                            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                            Alert.alert('Erreur', msg);
+                        }
                     }
                 }
             ]
         );
     };
 
-    const renderItem = ({ item }: any) => (
+    const renderItem = ({ item }: { item: MatchItem }) => (
         <View style={styles.card}>
             <TouchableOpacity
                 style={{ flex: 1 }}

@@ -7,9 +7,18 @@ import { supabase } from '../../lib/supabase';
 import * as LucideIcons from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const TrophyCard = React.memo(({ trophy, compact = false }: { trophy: any, compact?: boolean }) => {
+export interface TrophyData {
+    id: string;
+    name: string;
+    icon: string;
+    description?: string;
+    condition_description?: string;
+    unlocked?: boolean;
+}
+
+const TrophyCard = React.memo(({ trophy, compact = false }: { trophy: TrophyData, compact?: boolean }) => {
     // @ts-ignore
-    const Icon = LucideIcons[trophy.icon] || Award;
+    const Icon = (LucideIcons as any)[trophy.icon] || Award;
     const isUnlocked = trophy.unlocked;
 
     if (isUnlocked) {
@@ -60,12 +69,12 @@ const TrophyCard = React.memo(({ trophy, compact = false }: { trophy: any, compa
 
 interface TrophiesListProps {
     horizontal?: boolean;
-    achievements?: any[];
+    achievements?: TrophyData[];
     variant?: 'list' | 'grid';
 }
 
 export const TrophiesList = ({ horizontal = true, achievements, variant = 'list' }: TrophiesListProps) => {
-    const [trophies, setTrophies] = useState<any[]>([]);
+    const [trophies, setTrophies] = useState<TrophyData[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -113,7 +122,7 @@ export const TrophiesList = ({ horizontal = true, achievements, variant = 'list'
         }
     };
 
-    const renderItem = useCallback(({ item }: { item: any }) => (
+    const renderItem = useCallback(({ item }: { item: TrophyData }) => (
         <View style={{ marginRight: horizontal ? 12 : 0, marginBottom: !horizontal ? 12 : 0, flex: variant === 'grid' ? 1 / 2 : undefined }}>
             <TrophyCard trophy={item} compact={variant === 'grid'} />
         </View>

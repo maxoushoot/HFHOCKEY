@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { LiquidContainer } from '../../components/ui/LiquidContainer';
 import { Typo } from '../../components/ui/Typography';
-import { HeroCard } from '../../components/features/HeroCard';
+import { HeroCard, HeroCardMatch } from '../../components/features/HeroCard';
 import { MatchCard } from '../../components/features/MatchCard';
 import { NewsCarousel } from '../../components/features/NewsCarousel';
 import { TeamStatusWidget } from '../../components/features/TeamStatusWidget';
@@ -136,10 +136,12 @@ export default function HomeScreen() {
                             Prochain Match
                         </Typo>
                     </View>
-                    <HeroCard match={nextMatch || {
+                    <HeroCard match={nextMatch || ({
+                        id: 'dummy',
+                        status: 'scheduled',
                         home_team: { name: 'Grenoble', color: '#003399' },
                         away_team: { name: 'Rouen', color: '#FFD700' }
-                    }} />
+                    } as unknown as HeroCardMatch)} />
                 </View>
 
                 {/* Team Status */}

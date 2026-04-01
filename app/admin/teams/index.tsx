@@ -8,11 +8,20 @@ import { Edit2, X, Save, Search, Plus, Trash2 } from 'lucide-react-native';
 import { supabase } from '../../../lib/supabase';
 import { Stack } from 'expo-router';
 
+interface TeamItem {
+    id: string;
+    name: string;
+    slug: string;
+    color?: string;
+    secondary_color?: string;
+    logo_url?: string;
+}
+
 export default function AdminTeams() {
-    const [teams, setTeams] = useState<any[]>([]);
+    const [teams, setTeams] = useState<TeamItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [editingTeam, setEditingTeam] = useState<any>(null);
+    const [editingTeam, setEditingTeam] = useState<TeamItem | null>(null);
 
     // Form State
     const [name, setName] = useState('');
@@ -36,7 +45,7 @@ export default function AdminTeams() {
         setLoading(false);
     };
 
-    const openEditor = (item?: any) => {
+    const openEditor = (item?: TeamItem) => {
         if (item) {
             setEditingTeam(item);
             setName(item.name);
@@ -58,27 +67,31 @@ export default function AdminTeams() {
             logo_url: logoUrl
         };
 
-        let error;
-        if (editingTeam) {
-            // If editing, maybe don't change slug? Keep it simple.
-            const { error: err } = await supabase
-                .from('teams')
-                .update({ color, secondary_color: secondaryColor, logo_url: logoUrl, name })
-                .eq('id', editingTeam.id);
-            error = err;
-        } else {
-            const { error: err } = await supabase
-                .from('teams')
-                .insert(payload);
-            error = err;
-        }
+        try {
+            let error;
+            if (editingTeam) {
+                // If editing, maybe don't change slug? Keep it simple.
+                const { error: err } = await supabase
+                    .from('teams')
+                    .update({ color, secondary_color: secondaryColor, logo_url: logoUrl, name })
+                    .eq('id', editingTeam.id);
+                error = err;
+            } else {
+                const { error: err } = await supabase
+                    .from('teams')
+                    .insert(payload);
+                error = err;
+            }
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
-        } else {
+            if (error) throw error;
+
             setModalVisible(false);
             fetchTeams();
             resetForm();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
@@ -92,9 +105,15 @@ export default function AdminTeams() {
                     text: "Supprimer",
                     style: "destructive",
                     onPress: async () => {
-                        const { error } = await supabase.from('teams').delete().eq('id', id);
-                        if (error) Alert.alert('Erreur', error.message);
-                        else fetchTeams();
+                        try {
+                            const { error } = await supabase.from('teams').delete().eq('id', id);
+                            if (error) throw error;
+                            fetchTeams();
+                        } catch (error: unknown) {
+                            console.error(error);
+                            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                            Alert.alert('Erreur', msg);
+                        }
                     }
                 }
             ]
@@ -109,7 +128,7 @@ export default function AdminTeams() {
         setLogoUrl('');
     };
 
-    const renderItem = ({ item }: { item: any }) => (
+    const renderItem = ({ item }: { item: TeamItem }) => (
         <View style={styles.card}>
             <View style={[styles.colorDot, { backgroundColor: item.color || Colors.slate }]} />
             {item.logo_url ? (

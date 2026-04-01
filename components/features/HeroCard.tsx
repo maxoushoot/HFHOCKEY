@@ -20,19 +20,31 @@ import Animated, {
     Extrapolate
 } from 'react-native-reanimated';
 import { Bounceable } from '../ui/Bounceable';
+import { useCountdown } from '../../hooks/useCountdown';
+import { Match } from '../../types/database.types';
 
 const { width } = Dimensions.get('window');
+
+export type HeroCardMatch = Match & { 
+    competition_name?: string, 
+    status_short?: string,
+    home_score?: number,
+    away_score?: number,
+    venue?: string,
+    home_team?: { name: string, logo_url: string, slug: string, color: string },
+    away_team?: { name: string, logo_url: string, slug: string, color: string }
+};
 
 /**
  * HeroCard - Completely Redesigned Next Match Experience
  * Theme: Immersive, Dynamic, High-Contrast
  */
-export const HeroCard = memo(({ match }: { match: any }) => {
+export const HeroCard = memo(({ match }: { match: HeroCardMatch }) => {
     const router = useRouter();
     const { card, text, subText, colorMode } = useTheme();
     const homeTeam = match.home_team;
     const awayTeam = match.away_team;
-    const [countdown, setCountdown] = useState({ h: '00', m: '00', s: '00' });
+    const countdown = useCountdown(match.scheduled_at);
 
     // ... (keep existing animation logic) 
 
@@ -52,23 +64,7 @@ export const HeroCard = memo(({ match }: { match: any }) => {
         opacity: pulseAnim.value,
     }));
 
-    // Format remaining time
-    useEffect(() => {
-        if (!match.scheduled_at) return;
-        const update = () => {
-            const now = new Date().getTime();
-            const target = new Date(match.scheduled_at).getTime();
-            const diff = target - now;
-            if (diff <= 0) return;
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            setCountdown({ h: String(h).padStart(2, '0'), m: String(m).padStart(2, '0'), s: String(s).padStart(2, '0') });
-        };
-        update();
-        const timer = setInterval(update, 1000);
-        return () => clearInterval(timer);
-    }, [match.scheduled_at]);
+
 
     if (!homeTeam || !awayTeam) return null;
 

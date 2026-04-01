@@ -26,13 +26,25 @@ export function MVPVote({ homeTeamId, awayTeamId, onVote, initialVotedId, readOn
 
     // ...
 
-    const handleVote = (id: string) => {
+    const handleVote = async (id: string) => {
         if (readOnly) return;
+        const previousId = votedId;
+
+        // Optimistic Visual Update
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         explode(); // CONFETTI HERE
         scale.value = withSequence(withSpring(0.98), withSpring(1));
         setVotedId(id);
-        if (onVote) onVote(id);
+
+        try {
+            if (onVote) {
+                // Must be an async propagation to bubble up the throw
+                await Promise.resolve(onVote(id)); 
+            }
+        } catch (error) {
+            console.warn('[MVPVote] Rollback UI due to server rejection');
+            setVotedId(previousId);
+        }
     };
 
     const animatedStyle = useAnimatedStyle(() => ({

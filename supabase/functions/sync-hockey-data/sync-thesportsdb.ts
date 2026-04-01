@@ -56,53 +56,31 @@ export async function syncTSDBTeams(leagueId: number, season: string): Promise<n
         }
 
         let synced = 0;
+        const teamsArray = [];
         for (const [tsdbId, team] of teamsMap) {
             const apiId = parseInt(tsdbId);
 
-            // Check if already exists for this provider
-            const { data: existing } = await supabase
-                .from("teams")
-                .select("id")
-                .eq("api_id", apiId)
-                .eq("api_provider", PROVIDER)
-                .maybeSingle();
-
-            const teamData = {
+            const slug = team.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+            teamsArray.push({
                 name: team.name,
                 api_id: apiId,
                 api_provider: PROVIDER,
                 api_logo_url: team.badge,
                 country: "France",
                 league_id: leagueId,
-            };
-
-            if (existing) {
-                await supabase.from("teams").update(teamData).eq("id", existing.id);
-                console.log(`[sync-tsdb-teams] Updated: ${team.name}`);
-            } else {
-                // Try to match to an existing team by name (fuzzy)
-                const firstWord = team.name.split(" ")[0];
-                const { data: byName } = await supabase
-                    .from("teams")
-                    .select("id")
-                    .ilike("name", `%${firstWord}%`)
-                    .maybeSingle();
-
-                if (byName) {
-                    await supabase.from("teams").update(teamData).eq("id", byName.id);
-                    console.log(`[sync-tsdb-teams] Linked: ${team.name} (ID ${apiId})`);
-                } else {
-                    const slug = team.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-                    await supabase.from("teams").insert({
-                        ...teamData,
-                        slug,
-                        color: "#1E3A5F",
-                        logo_url: team.badge,
-                    });
-                    console.log(`[sync-tsdb-teams] Created: ${team.name}`);
-                }
-            }
+                slug,
+                color: "#1E3A5F",
+                logo_url: team.badge,
+            });
             synced++;
+        }
+
+        if (teamsArray.length > 0) {
+            const { error } = await supabase.from("teams").upsert(teamsArray, { onConflict: "api_id" });
+            if (error) {
+                console.error(`[sync-tsdb-teams] Upsert error:`, error);
+                throw error;
+            }
         }
 
         await logSync(supabase, `tsdb-teams`, "success", synced, 1);
@@ -137,6 +115,7 @@ export async function syncTSDBMatches(leagueId: number, season: string): Promise
 
         let synced = 0;
         let skipped = 0;
+        const matchesArray = [];
         for (const event of response.events) {
             const homeId = teamMap.get(parseInt(event.idHomeTeam));
             const awayId = teamMap.get(parseInt(event.idAwayTeam));
@@ -154,7 +133,7 @@ export async function syncTSDBMatches(leagueId: number, season: string): Promise
             const isFinished = event.strStatus === "FT" || event.strStatus === "Match Finished";
             const isPostponed = event.strPostponed === "yes";
 
-            const matchData = {
+            matchesArray.push({
                 api_id: apiId,
                 api_provider: PROVIDER,
                 home_team_id: homeId,
@@ -167,21 +146,13 @@ export async function syncTSDBMatches(leagueId: number, season: string): Promise
                 venue: event.strVenue || null,
                 league_id: leagueId,
                 season: parseInt(season.split("-")[0]),
-            };
-
-            const { data: existing } = await supabase
-                .from("matches")
-                .select("id")
-                .eq("api_id", apiId)
-                .eq("api_provider", PROVIDER)
-                .maybeSingle();
-
-            if (existing) {
-                await supabase.from("matches").update(matchData).eq("id", existing.id);
-            } else {
-                await supabase.from("matches").insert(matchData);
-            }
+            });
             synced++;
+        }
+
+        if (matchesArray.length > 0) {
+            const { error } = await supabase.from("matches").upsert(matchesArray, { onConflict: "api_id" });
+            if (error) throw error;
         }
 
         console.log(`[sync-tsdb-matches] Synced: ${synced}, Skipped (team not found): ${skipped}`);
@@ -223,11 +194,12 @@ export async function syncTSDBStandings(leagueId: number, season: string): Promi
         }
 
         let synced = 0;
+        const standingsArray = [];
         for (const row of response.table) {
             const teamId = teamMap.get(parseInt(row.idTeam));
             if (!teamId) continue;
 
-            await supabase.from("standings").insert({
+            standingsArray.push({
                 team_id: teamId,
                 played: parseInt(row.intPlayed || "0"),
                 wins: parseInt(row.intWin || "0"),
@@ -238,6 +210,11 @@ export async function syncTSDBStandings(leagueId: number, season: string): Promi
                 points: parseInt(row.intPoints || "0"),
             });
             synced++;
+        }
+
+        if (standingsArray.length > 0) {
+            const { error } = await supabase.from("standings").insert(standingsArray);
+            if (error) throw error;
         }
 
         await logSync(supabase, `tsdb-standings`, "success", synced, 1);

@@ -168,17 +168,36 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
         }
     },
 
-    voteMVP: (matchId: string, playerId: string) => {
-        const { unlockAchievement } = get();
+    voteMVP: async (matchId: string, playerId: string) => {
+        const { session, mvpVotes, unlockAchievement } = get();
+        const previousState = { ...mvpVotes };
+
+        // Optimistic UI
         set((state) => ({
             mvpVotes: { ...state.mvpVotes, [matchId]: playerId }
         }));
+        
+        if (!session) return;
         unlockAchievement('2');
+
+        try {
+            const { error } = await supabase
+                .from('mvp_votes')
+                .upsert({ user_id: session.user.id, match_id: matchId, player_id: playerId }, { onConflict: 'user_id, match_id' });
+            
+            if (error) throw error;
+        } catch (err) {
+            console.error('Network error during MVP vote. Rolling back...', err);
+            set({ mvpVotes: previousState });
+            throw err;
+        }
     },
 
-    submitPrediction: (matchId, homeScore, awayScore, winnerId) => {
-        const { session, unlockAchievement } = get();
+    submitPrediction: async (matchId, homeScore, awayScore, winnerId) => {
+        const { session, predictions, unlockAchievement } = get();
         if (!session) return;
+
+        const previousState = { ...predictions };
 
         const prediction: Prediction = {
             user_id: session.user.id,
@@ -188,11 +207,23 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
             winner_team_id: winnerId
         };
 
+        // Optimistic UI
         set((state) => ({
             predictions: { ...state.predictions, [matchId]: prediction }
         }));
-
         unlockAchievement('3');
+
+        try {
+            const { error } = await supabase
+                .from('predictions')
+                .upsert(prediction, { onConflict: 'user_id, match_id' });
+
+            if (error) throw error;
+        } catch (err) {
+            console.error('Network error during Prediction submission. Rolling back...', err);
+            set({ predictions: previousState });
+            throw err;
+        }
     },
 
     unlockAchievement: async (achievementId) => {
@@ -244,42 +275,29 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
     },
 
     claimDailyBonus: async () => {
-        const { session, profile, updateXP } = get();
+        const { session, profile } = get();
         if (!session || !profile) return { success: false, xpGiven: 0, error: 'Non connecté' };
 
-        const now = new Date();
-        const lastBonus = profile.last_daily_bonus_at ? new Date(profile.last_daily_bonus_at) : null;
-
-        // Check if already claimed today
-        if (lastBonus) {
-            const isSameDay = lastBonus.getDate() === now.getDate() &&
-                lastBonus.getMonth() === now.getMonth() &&
-                lastBonus.getFullYear() === now.getFullYear();
-
-            if (isSameDay) {
-                return { success: false, xpGiven: 0, error: 'Déjà réclamé aujourd\'hui' };
-            }
-        }
-
-        const XP_REWARD = 50; // Daily reward amount
-
         try {
-            // Update DB
-            const { error } = await supabase
-                .from('user_profiles')
-                .update({
-                    last_daily_bonus_at: now.toISOString(),
-                    xp: (profile.xp || 0) + XP_REWARD
-                })
-                .eq('id', session.user.id);
+            // Appel robuste à une fonction RPC "claim_daily_bonus"
+            // Cette fonction vérifiera "now()" côté serveur, mettra à jour l'XP et last_daily_bonus_at de manière ACID.
+            const { data, error } = await supabase.rpc('claim_daily_bonus', { user_id_param: session.user.id });
 
             if (error) throw error;
+            if (!data?.success) {
+                return { success: false, xpGiven: 0, error: data?.error || 'Déjà réclamé aujourd\'hui' };
+            }
 
-            // Update Local State
+            const XP_REWARD = data.xp_reward || 50;
+
+            // Update Local State with optimistic UI changes
+            // Real source of truth is now handled by the server
+            const NOW_ISO = new Date().toISOString(); 
+            
             set({
                 profile: {
                     ...profile,
-                    last_daily_bonus_at: now.toISOString(),
+                    last_daily_bonus_at: NOW_ISO,
                     xp: (profile.xp || 0) + XP_REWARD
                 }
             });

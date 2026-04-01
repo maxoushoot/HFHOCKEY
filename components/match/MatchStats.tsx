@@ -3,9 +3,26 @@ import { StyleSheet, View } from 'react-native';
 import { Typo } from '../ui/Typography';
 import { Colors } from '../../constants/Colors';
 import { generateStats } from '../../utils/mockMatchData';
+import { Match } from '../../types/database.types';
+
+export interface TeamStats {
+    shots: number;
+    faceoffs: number;
+    powerplay: string | number;
+    penalties: number;
+}
+
+export interface MatchStatsData {
+    home: TeamStats;
+    away: TeamStats;
+}
 
 interface MatchStatsProps {
-    match: any;
+    match: Match & { 
+        stats?: MatchStatsData; 
+        home_team?: { color?: string }; 
+        away_team?: { color?: string }; 
+    };
 }
 
 export function MatchStats({ match }: MatchStatsProps) {
@@ -23,30 +40,30 @@ export function MatchStats({ match }: MatchStatsProps) {
                 label="Tirs au but"
                 homeValue={stats.home.shots}
                 awayValue={stats.away.shots}
-                homeColor={match.home_team.color}
-                awayColor={match.away_team.color}
+                homeColor={match.home_team?.color}
+                awayColor={match.away_team?.color}
             />
             <StatRow
                 label="Mises au jeu gagnées"
                 homeValue={stats.home.faceoffs}
                 awayValue={stats.away.faceoffs}
-                homeColor={match.home_team.color}
-                awayColor={match.away_team.color}
+                homeColor={match.home_team?.color}
+                awayColor={match.away_team?.color}
             />
             <StatRow
                 label="Powerplay"
                 homeValue={stats.home.powerplay}
                 awayValue={stats.away.powerplay}
-                homeColor={match.home_team.color}
-                awayColor={match.away_team.color}
+                homeColor={match.home_team?.color}
+                awayColor={match.away_team?.color}
                 isText
             />
             <StatRow
                 label="Pénalités (min)"
                 homeValue={stats.home.penalties}
                 awayValue={stats.away.penalties}
-                homeColor={match.home_team.color}
-                awayColor={match.away_team.color}
+                homeColor={match.home_team?.color}
+                awayColor={match.away_team?.color}
             />
         </View>
     );

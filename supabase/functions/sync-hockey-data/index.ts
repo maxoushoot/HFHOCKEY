@@ -24,6 +24,16 @@ Deno.serve(async (req: Request) => {
         return new Response("ok", { headers: corsHeaders });
     }
 
+    // Security check: Reject anonymous requests to prevent DDoS
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        console.error("❌ [sync-hockey-data] Unauthorized access attempt (Missing/Invalid Bearer token)");
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+            status: 401, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
+    }
+
     try {
         const url = new URL(req.url);
         const syncType = url.searchParams.get("type") || "full";

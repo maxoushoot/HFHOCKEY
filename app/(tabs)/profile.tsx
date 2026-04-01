@@ -219,7 +219,14 @@ export default function ProfileScreen() {
     );
 }
 
-const SettingRow = React.memo(function SettingRow({ icon: Icon, label, value, onPress }: any) {
+interface SettingRowProps {
+    icon: React.ElementType;
+    label: string;
+    value?: string;
+    onPress: () => void;
+}
+
+const SettingRow = React.memo(function SettingRow({ icon: Icon, label, value, onPress }: SettingRowProps) {
     const { text, colorMode } = useTheme();
     return (
         <TouchableOpacity style={styles.settingRow} activeOpacity={0.6} onPress={onPress}>

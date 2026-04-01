@@ -10,11 +10,18 @@ import { Stack } from 'expo-router';
 
 const CATEGORIES = ['Règles', 'Tactique', 'Statistiques'];
 
+interface TermItem {
+    id: string;
+    term: string;
+    definition: string;
+    category: string;
+}
+
 export default function AdminAcademy() {
-    const [terms, setTerms] = useState<any[]>([]);
+    const [terms, setTerms] = useState<TermItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [editingItem, setEditingItem] = useState<any>(null);
+    const [editingItem, setEditingItem] = useState<TermItem | null>(null);
 
     // Form State
     const [term, setTerm] = useState('');
@@ -45,26 +52,30 @@ export default function AdminAcademy() {
 
         const payload = { term, definition, category };
 
-        let error;
-        if (editingItem) {
-            const { error: err } = await supabase
-                .from('glossary_terms')
-                .update(payload)
-                .eq('id', editingItem.id);
-            error = err;
-        } else {
-            const { error: err } = await supabase
-                .from('glossary_terms')
-                .insert(payload);
-            error = err;
-        }
+        try {
+            let error;
+            if (editingItem) {
+                const { error: err } = await supabase
+                    .from('glossary_terms')
+                    .update(payload)
+                    .eq('id', editingItem.id);
+                error = err;
+            } else {
+                const { error: err } = await supabase
+                    .from('glossary_terms')
+                    .insert(payload);
+                error = err;
+            }
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
-        } else {
+            if (error) throw error;
+
             setModalVisible(false);
             fetchTerms();
             resetForm();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
@@ -78,16 +89,22 @@ export default function AdminAcademy() {
                     text: "Supprimer",
                     style: "destructive",
                     onPress: async () => {
-                        const { error } = await supabase.from('glossary_terms').delete().eq('id', id);
-                        if (error) Alert.alert('Erreur', error.message);
-                        else fetchTerms();
+                        try {
+                            const { error } = await supabase.from('glossary_terms').delete().eq('id', id);
+                            if (error) throw error;
+                            fetchTerms();
+                        } catch (error: unknown) {
+                            console.error(error);
+                            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                            Alert.alert('Erreur', msg);
+                        }
                     }
                 }
             ]
         );
     };
 
-    const openEditor = (item?: any) => {
+    const openEditor = (item?: TermItem) => {
         if (item) {
             setEditingItem(item);
             setTerm(item.term);
@@ -106,7 +123,7 @@ export default function AdminAcademy() {
         setCategory('Règles');
     };
 
-    const renderItem = ({ item }: { item: any }) => (
+    const renderItem = ({ item }: { item: TermItem }) => (
         <View style={styles.card}>
             <View style={[styles.iconBox, { backgroundColor: Colors.france.blue + '20' }]}>
                 <BookOpen size={20} color={Colors.france.blue} />

@@ -14,7 +14,39 @@ import { Bounceable } from '../../components/ui/Bounceable';
 
 const { width } = Dimensions.get('window');
 
-function RosterSection({ title, players, color, cardColor, textColor, subTextColor, borderColor }: any) {
+interface Player {
+    id: string;
+    team_id?: string;
+    name?: string;
+    position?: string;
+    goals?: number;
+    assists?: number;
+    matches_played?: number;
+    status?: string;
+    photo_url?: string;
+    jersey_number?: string | number;
+}
+
+interface IMatch {
+    id: string;
+    status?: string;
+    home_team_id?: string;
+    away_team_id?: string;
+    home_team?: { slug?: string };
+    away_team?: { slug?: string };
+}
+
+interface RosterSectionProps {
+    title: string;
+    players: Player[];
+    color: string;
+    cardColor: string;
+    textColor: string;
+    subTextColor: string;
+    borderColor: string;
+}
+
+function RosterSection({ title, players, color, cardColor, textColor, subTextColor, borderColor }: RosterSectionProps) {
     if (players.length === 0) return null;
 
     return (
@@ -23,14 +55,14 @@ function RosterSection({ title, players, color, cardColor, textColor, subTextCol
                 {title.toUpperCase()}
             </Typo>
             <View style={styles.rosterGrid}>
-                {players.map((player: any) => (
+                {players.map((player: Player) => (
                     <TouchableOpacity
                         key={player.id}
                         style={[styles.playerCard, { backgroundColor: cardColor, borderColor: borderColor }]}
                         activeOpacity={0.7}
                         onPress={() => Alert.alert(
-                            player.name,
-                            `Poste: ${player.position}\nButs: ${player.goals || 0}\nAssists: ${player.assists || 0}\nMatchs: ${player.matches_played || 0}`
+                            player.name || 'Joueur',
+                            `Poste: ${player.position || 'N/A'}\nButs: ${player.goals || 0}\nAssists: ${player.assists || 0}\nMatchs: ${player.matches_played || 0}`
                         )}
                     >
                         <View style={styles.playerAvatarContainer}>
@@ -90,13 +122,13 @@ export default function TeamDetailScreen() {
     }
 
     const teamPlayers = useMemo(() => players.filter(p => p.team_id === team.id), [players, team.id]);
-    const teamMatches = useMemo(() => matches.filter((m: any) =>
+    const teamMatches = useMemo(() => matches.filter((m: IMatch) =>
         m.home_team_id === team.id || m.away_team_id === team.id ||
         m.home_team?.slug === team.slug || m.away_team?.slug === team.slug
     ), [matches, team.id, team.slug]);
 
-    const pastMatches = useMemo(() => teamMatches.filter((m: any) => m.status === 'finished').reverse(), [teamMatches]);
-    const futureMatches = useMemo(() => teamMatches.filter((m: any) => m.status === 'scheduled' || m.status === 'live'), [teamMatches]);
+    const pastMatches = useMemo(() => teamMatches.filter((m: IMatch) => m.status === 'finished').reverse(), [teamMatches]);
+    const futureMatches = useMemo(() => teamMatches.filter((m: IMatch) => m.status === 'scheduled' || m.status === 'live'), [teamMatches]);
     const lastMatch = pastMatches[0];
 
     // ─── Leaders: Top Scorer, Top Pointer, Top Goalie ───

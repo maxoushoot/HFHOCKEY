@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, RefreshControl, AppState } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, RefreshControl } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { LiquidContainer } from '../../components/ui/LiquidContainer';
 import { MatchHeader } from '../../components/match/MatchHeader';
@@ -16,15 +16,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { SectionHeader } from '../../components/ui/SectionHeader';
-import { supabase } from '../../lib/supabase';
 import { PredictionModal } from '../../components/game/PredictionModal';
 import { MatchTabs } from '../../components/match/MatchTabs';
 import GameTimeline from '../../components/features/GameTimeline';
 import { MatchStats } from '../../components/match/MatchStats';
 import { MatchLineups } from '../../components/match/MatchLineups';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import { generateEvents, generateStats, generateLineups } from '../../utils/mockMatchData';
 import { VotingModal, QuizModal } from '../../components/features/MatchModals';
+import { useMatchData } from '../../hooks/useMatchData';
 
 const { width } = Dimensions.get('window');
 
@@ -33,118 +32,17 @@ const { width } = Dimensions.get('window');
  */
 export default function MatchDetailScreen() {
     const { id } = useLocalSearchParams();
-    const { matches, mvpVotes, voteMVP, predictions, submitPrediction, gameEvents } = useStore();
-    const [localMatch, setLocalMatch] = useState<Match | null>(null);
+    const { mvpVotes, voteMVP, predictions, submitPrediction, gameEvents } = useStore();
+    const { match, refreshing, onRefresh, mockEvents, mockStats } = useMatchData(id as string);
     const [isVoteModalVisible, setIsVoteModalVisible] = useState(false);
     const [isPredictionModalVisible, setIsPredictionModalVisible] = useState(false);
     const [activeTab, setActiveTab] = useState('summary');
     const [showMatchQuiz, setShowMatchQuiz] = useState(false);
 
-    // Mock Data for testing if store is empty
-    const [mockEvents, setMockEvents] = useState<any[]>([]);
-    const [mockStats, setMockStats] = useState<any>(null);
-
-    // ...
-
-    // Confetti ref
     const confettiRef = useRef<ConfettiCannon>(null);
 
-    const match = matches.find((m) => m.id === id) || localMatch;
     const hasVotedMVP = match ? !!mvpVotes[match.id] : false;
     const userPrediction = match ? predictions[match.id] : null;
-
-    // Fetch match if not found in store (Deep linking)
-    useEffect(() => {
-        if (!match && id) {
-            const fetchMatch = async () => {
-                const { data } = await supabase
-                    .from('matches')
-                    .select(`*, home_team:home_team_id(*), away_team:away_team_id(*)`) // Corrected away_team_id
-                    .eq('id', id)
-                    .single();
-                if (data) setLocalMatch(data as Match);
-            }
-            fetchMatch();
-        }
-    }, [id, match]);
-
-    // Fetch Events & Live Polling
-    const { fetchGameEvents, triggerSync, fetchMatches } = useStore();
-    const [refreshing, setRefreshing] = useState(false);
-
-    const onRefresh = async () => {
-        if (match?.api_id) {
-            setRefreshing(true);
-            try {
-                await triggerSync('scores');
-                if (match?.api_id) {
-                    await triggerSync('events', { match_id: match.api_id });
-                    await fetchGameEvents(match.api_id);
-                }
-
-                // Also refresh local match details
-                const { data } = await supabase
-                    .from('matches')
-                    .select(`*, home_team:home_team_id(*), away_team:home_team_id(*)`)
-                    .eq('id', id)
-                    .single();
-                if (data) setLocalMatch(data as Match);
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setRefreshing(false);
-            }
-        }
-    };
-
-    useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        let subscription: any;
-
-        const startPolling = () => {
-            if (interval) clearInterval(interval);
-            if (match?.status === 'live' && AppState.currentState === 'active') {
-                interval = setInterval(() => {
-                    console.log(`[MatchDetail] Polling live data for match ${match?.api_id}...`);
-                    triggerSync('scores');
-                    if (match?.api_id) {
-                        triggerSync('events', { match_id: match.api_id })
-                            .then(() => fetchGameEvents(match.api_id!));
-                    }
-                }, 300000); // Poll every 5 minutes (Safe)
-            }
-        };
-
-        const stopPolling = () => {
-            if (interval) clearInterval(interval);
-        };
-
-        if (match?.api_id) {
-            fetchGameEvents(match.api_id);
-
-            // Generate mock data if needed for testing
-            if (match.status !== 'scheduled') {
-                setMockEvents(generateEvents(match.id, match.home_team_id, match.away_team_id));
-                setMockStats(generateStats(match.id));
-            }
-
-            if (match.status === 'live') {
-                startPolling();
-                subscription = AppState.addEventListener('change', nextAppState => {
-                    if (nextAppState === 'active') {
-                        startPolling();
-                    } else {
-                        stopPolling();
-                    }
-                });
-            }
-        }
-        
-        return () => {
-            stopPolling();
-            if (subscription) subscription.remove();
-        };
-    }, [match?.id, match?.status, match?.api_id]);
 
     // Check if voting channel should be open (Simulated: 'live' status)
     const isLive = match?.status === 'live';

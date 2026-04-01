@@ -8,8 +8,15 @@ import { UserCog, ShieldAlert, Search } from 'lucide-react-native';
 import { supabase } from '../../../lib/supabase';
 import { Stack } from 'expo-router';
 
+interface UserItem {
+    id: string;
+    full_name?: string;
+    role: string;
+    xp?: number;
+}
+
 export default function AdminUsers() {
-    const [users, setUsers] = useState<any[]>([]);
+    const [users, setUsers] = useState<UserItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -39,20 +46,26 @@ export default function AdminUsers() {
                 {
                     text: "Confirmer",
                     onPress: async () => {
-                        const { error } = await supabase
-                            .from('user_profiles')
-                            .update({ role: newRole })
-                            .eq('id', id);
+                        try {
+                            const { error } = await supabase
+                                .from('user_profiles')
+                                .update({ role: newRole })
+                                .eq('id', id);
 
-                        if (error) Alert.alert('Erreur', error.message);
-                        else fetchUsers();
+                            if (error) throw error;
+                            fetchUsers();
+                        } catch (error: unknown) {
+                            console.error(error);
+                            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                            Alert.alert('Erreur', msg);
+                        }
                     }
                 }
             ]
         );
     };
 
-    const renderItem = ({ item }: { item: any }) => (
+    const renderItem = ({ item }: { item: UserItem }) => (
         <View style={styles.card}>
             <View style={[styles.avatar, item.role === 'admin' && styles.adminAvatar]}>
                 <Typo weight="bold" color={item.role === 'admin' ? Colors.white : Colors.night}>

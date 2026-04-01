@@ -9,11 +9,20 @@ import { supabase } from '../../../lib/supabase';
 import { Stack } from 'expo-router';
 import * as LucideIcons from 'lucide-react-native';
 
+interface TrophyItem {
+    id: string;
+    name: string;
+    description?: string;
+    condition_description?: string;
+    icon: string;
+    color: string;
+}
+
 export default function AdminTrophies() {
-    const [trophies, setTrophies] = useState<any[]>([]);
+    const [trophies, setTrophies] = useState<TrophyItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [editingItem, setEditingItem] = useState<any>(null);
+    const [editingItem, setEditingItem] = useState<TrophyItem | null>(null);
 
     // Form State
     const [name, setName] = useState('');
@@ -52,26 +61,30 @@ export default function AdminTrophies() {
             color
         };
 
-        let error;
-        if (editingItem) {
-            const { error: err } = await supabase
-                .from('trophies')
-                .update(payload)
-                .eq('id', editingItem.id);
-            error = err;
-        } else {
-            const { error: err } = await supabase
-                .from('trophies')
-                .insert(payload);
-            error = err;
-        }
+        try {
+            let error;
+            if (editingItem) {
+                const { error: err } = await supabase
+                    .from('trophies')
+                    .update(payload)
+                    .eq('id', editingItem.id);
+                error = err;
+            } else {
+                const { error: err } = await supabase
+                    .from('trophies')
+                    .insert(payload);
+                error = err;
+            }
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
-        } else {
+            if (error) throw error;
+
             setModalVisible(false);
             fetchTrophies();
             resetForm();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
@@ -85,16 +98,22 @@ export default function AdminTrophies() {
                     text: "Supprimer",
                     style: "destructive",
                     onPress: async () => {
-                        const { error } = await supabase.from('trophies').delete().eq('id', id);
-                        if (error) Alert.alert('Erreur', error.message);
-                        else fetchTrophies();
+                        try {
+                            const { error } = await supabase.from('trophies').delete().eq('id', id);
+                            if (error) throw error;
+                            fetchTrophies();
+                        } catch (error: unknown) {
+                            console.error(error);
+                            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                            Alert.alert('Erreur', msg);
+                        }
                     }
                 }
             ]
         );
     };
 
-    const openEditor = (item?: any) => {
+    const openEditor = (item?: TrophyItem) => {
         if (item) {
             setEditingItem(item);
             setName(item.name);
@@ -117,7 +136,7 @@ export default function AdminTrophies() {
         setColor('#3B82F6');
     };
 
-    const renderItem = ({ item }: { item: any }) => {
+    const renderItem = ({ item }: { item: TrophyItem }) => {
         return (
             <View style={styles.card}>
                 <View style={[styles.iconBox, { backgroundColor: item.color + '20' }]}>

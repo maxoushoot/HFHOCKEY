@@ -5,18 +5,32 @@ import { Colors } from '../../constants/Colors';
 import { generateLineups } from '../../utils/mockMatchData';
 import { useRouter } from 'expo-router';
 
+import { Match } from '../../types/database.types';
+
+export type LineupPlayer = {
+    id: string;
+    name: string;
+    position: string;
+    number: number | string;
+};
+
+type MatchTeams = Match & {
+    home_team?: { id?: string, name?: string, slug?: string, color?: string };
+    away_team?: { id?: string, name?: string, slug?: string, color?: string };
+};
+
 interface MatchLineupsProps {
-    match: any;
+    match: MatchTeams;
 }
 
 export function MatchLineups({ match }: MatchLineupsProps) {
     const router = useRouter();
-    const [activeTeamId, setActiveTeamId] = useState(match.home_team.id);
+    const [activeTeamId, setActiveTeamId] = useState(match.home_team?.id);
 
-    const activeTeam = activeTeamId === match.home_team.id ? match.home_team : match.away_team;
+    const activeTeam = activeTeamId === match.home_team?.id ? match.home_team : match.away_team;
 
     const players = useMemo(() => {
-        return generateLineups(activeTeamId);
+        return generateLineups(activeTeamId || '');
     }, [activeTeamId]);
 
     const goalies = players.filter(p => p.position === 'G');
@@ -27,27 +41,27 @@ export function MatchLineups({ match }: MatchLineupsProps) {
             {/* Team Switcher */}
             <View style={styles.teamSwitcher}>
                 <TouchableOpacity
-                    style={[styles.teamTab, activeTeamId === match.home_team.id && styles.activeTab]}
-                    onPress={() => setActiveTeamId(match.home_team.id)}
+                    style={[styles.teamTab, activeTeamId === match.home_team?.id && styles.activeTab]}
+                    onPress={() => match.home_team?.id && setActiveTeamId(match.home_team.id)}
                 >
                     <Typo
                         variant="body"
                         weight="bold"
-                        color={activeTeamId === match.home_team.id ? Colors.night : Colors.textSecondary}
+                        color={activeTeamId === match.home_team?.id ? Colors.night : Colors.textSecondary}
                     >
-                        {match.home_team.name}
+                        {match.home_team?.name}
                     </Typo>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.teamTab, activeTeamId === match.away_team.id && styles.activeTab]}
-                    onPress={() => setActiveTeamId(match.away_team.id)}
+                    style={[styles.teamTab, activeTeamId === match.away_team?.id && styles.activeTab]}
+                    onPress={() => match.away_team?.id && setActiveTeamId(match.away_team.id)}
                 >
                     <Typo
                         variant="body"
                         weight="bold"
-                        color={activeTeamId === match.away_team.id ? Colors.night : Colors.textSecondary}
+                        color={activeTeamId === match.away_team?.id ? Colors.night : Colors.textSecondary}
                     >
-                        {match.away_team.name}
+                        {match.away_team?.name}
                     </Typo>
                 </TouchableOpacity>
             </View>
@@ -55,7 +69,7 @@ export function MatchLineups({ match }: MatchLineupsProps) {
             <TouchableOpacity
                 style={styles.teamActionBtn}
                 onPress={() => {
-                    if (activeTeam.slug) router.push(`/team/${activeTeam.slug}`);
+                    if (activeTeam?.slug) router.push(`/team/${activeTeam.slug}`);
                 }}
             >
                 <Typo variant="caption" weight="black" color={Colors.france.blue}>VOIR LA FICHE ÉQUIPE</Typo>
@@ -78,7 +92,7 @@ export function MatchLineups({ match }: MatchLineupsProps) {
     );
 }
 
-function PlayerRow({ player }: { player: any }) {
+function PlayerRow({ player }: { player: LineupPlayer }) {
     return (
         <View style={styles.playerRow}>
             <View style={styles.numberContainer}>

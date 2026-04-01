@@ -9,15 +9,27 @@ import {
     RefreshCw, Zap, BarChart3, Calendar, Activity, CheckCircle, XCircle, Clock
 } from 'lucide-react-native';
 
+interface SyncData {
+    type?: string;
+    teams?: number;
+    matches?: number;
+    events?: number;
+    standings?: number;
+    rateLimit?: {
+        requestsRemaining: number;
+        requestsLimit: number;
+    };
+}
+
 interface SyncResult {
     success: boolean;
-    data?: any;
+    data?: SyncData;
     error?: string;
 }
 
 type SyncType = 'full' | 'scores' | 'events' | 'standings' | 'status';
 
-const SYNC_BUTTONS: { type: SyncType; label: string; icon: any; color: string; description: string }[] = [
+const SYNC_BUTTONS: { type: SyncType; label: string; icon: React.ElementType; color: string; description: string }[] = [
     { type: 'full', label: 'Sync Complète', icon: RefreshCw, color: Colors.primary, description: 'Ligues → Équipes → Matchs → Events → Classement' },
     { type: 'scores', label: 'Scores Rapide', icon: Zap, color: '#F59E0B', description: "Scores du jour uniquement (1 requête)" },
     { type: 'events', label: 'Événements', icon: Activity, color: '#10B981', description: 'Buts & pénalités des matchs terminés' },
@@ -30,52 +42,8 @@ export default function AdminSyncScreen() {
     const matches = useStore((s) => s.matches);
     const [loading, setLoading] = useState<SyncType | null>(null);
     const [lastResult, setLastResult] = useState<SyncResult | null>(null);
-    const [livePolling, setLivePolling] = useState(false);
-    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-    const hasLiveMatches = matches.some((m) => m.status === 'live');
-
-    // Live polling every 60 seconds (Secured with AppState)
-    useEffect(() => {
-        let subscription: any;
-
-        const startPolling = () => {
-            if (pollingRef.current) clearInterval(pollingRef.current);
-            if (livePolling && AppState.currentState === 'active') {
-                pollingRef.current = setInterval(async () => {
-                    console.log('[Live Polling] Fetching scores...');
-                    const result = await triggerSync('scores');
-                    setLastResult(result);
-                }, 60000); // Every 1 minute
-            }
-        };
-
-        const stopPolling = () => {
-            if (pollingRef.current) {
-                clearInterval(pollingRef.current);
-                pollingRef.current = null;
-            }
-        };
-
-        if (livePolling) {
-            startPolling();
-            subscription = AppState.addEventListener('change', nextAppState => {
-                if (nextAppState === 'active') {
-                    startPolling();
-                } else {
-                    stopPolling();
-                }
-            });
-        } else {
-            stopPolling();
-        }
-
-        return () => {
-            stopPolling();
-            if (subscription) subscription.remove();
-        };
-    }, [livePolling, triggerSync]);
-
+    // Removing Live Polling feature to prevent mass API requests.
+    // Suppressed the setInterval. Future implementations should use Supabase WebSockets (Realtime).
     const handleSync = useCallback(async (type: SyncType) => {
         setLoading(type);
         try {
@@ -93,18 +61,6 @@ export default function AdminSyncScreen() {
         setLoading(null);
     }, [triggerSync]);
 
-    const toggleLivePolling = useCallback(() => {
-        setLivePolling((prev) => {
-            const newVal = !prev;
-            if (newVal) {
-                Alert.alert('🔴 Live ON', 'Scores mis à jour toutes les 60 secondes');
-            } else {
-                Alert.alert('⏸️ Live OFF', 'Polling arrêté');
-            }
-            return newVal;
-        });
-    }, []);
-
     return (
         <LiquidContainer>
             <ScrollView contentContainerStyle={styles.container}>
@@ -113,40 +69,9 @@ export default function AdminSyncScreen() {
                         🏒 Sync API-Sports
                     </Typo>
                     <Typo variant="body" color={Colors.textSecondary}>
-                        Synchroniser les données hockey depuis API-Sports
+                        Synchroniser les données hockey depuis API-Sports (Mode Manuel)
                     </Typo>
                 </View>
-
-                {/* Live Polling Toggle */}
-                <TactileButton
-                    style={[
-                        styles.liveCard,
-                        livePolling && styles.liveCardActive,
-                    ]}
-                    onPress={toggleLivePolling}
-                >
-                    <View style={styles.liveRow}>
-                        <View style={[styles.liveDot, livePolling && styles.liveDotActive]} />
-                        <View style={{ flex: 1 }}>
-                            <Typo variant="body" weight="bold" color={livePolling ? '#FFFFFF' : Colors.night}>
-                                {livePolling ? '🔴 LIVE — Polling actif' : '⏸️ Live Polling désactivé'}
-                            </Typo>
-                            <Typo variant="caption" color={livePolling ? 'rgba(255,255,255,0.8)' : Colors.textSecondary}>
-                                {livePolling
-                                    ? 'Scores rafraîchis toutes les 60s'
-                                    : 'Appuyer pour activer (toutes les 60s)'
-                                }
-                            </Typo>
-                        </View>
-                        {hasLiveMatches && (
-                            <View style={styles.liveMatchBadge}>
-                                <Typo variant="caption" weight="bold" color="#FFFFFF">
-                                    {matches.filter(m => m.status === 'live').length} LIVE
-                                </Typo>
-                            </View>
-                        )}
-                    </View>
-                </TactileButton>
 
                 {/* Sync Buttons */}
                 {SYNC_BUTTONS.map((btn) => (

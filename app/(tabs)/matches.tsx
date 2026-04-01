@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 type TabType = 'calendar' | 'teams' | 'players';
 
-const TABS: { id: TabType; label: string; icon: any }[] = [
+const TABS: { id: TabType; label: string; icon: React.ElementType }[] = [
     { id: 'calendar', label: 'Calendrier', icon: Calendar },
     { id: 'teams', label: 'Équipes', icon: Trophy },
     { id: 'players', label: 'Joueurs', icon: Users },
@@ -107,18 +107,19 @@ export default function MatchesScreen() {
                             <MatchListSkeleton />
                         </ScrollView>
                     ) : (
-                        <FlashList
-                            data={matches}
-                            renderItem={({ item }) => (
-                                <View style={{ marginBottom: 16 }}>
-                                    <MatchCard match={item} />
-                                </View>
-                            )}
-                            // @ts-ignore
-                            estimatedItemSize={140}
-                            contentContainerStyle={styles.content}
-                            showsVerticalScrollIndicator={false}
-                        />
+                            <FlashList
+                                data={matches}
+                                renderItem={({ item }: { item: typeof matches[0] }) => (
+                                    <View style={{ marginBottom: 16 }}>
+                                        <MatchCard match={item} />
+                                    </View>
+                                )}
+                                // @ts-ignore
+                                estimatedItemSize={140}
+                                keyExtractor={(item) => item.id.toString()}
+                                contentContainerStyle={styles.content}
+                                showsVerticalScrollIndicator={false}
+                            />
                     )
                 ) : (
                     <ScrollView

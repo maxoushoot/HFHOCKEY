@@ -8,12 +8,21 @@ import { Edit2, X, Save, Search, Filter, Plus, Trash2 } from 'lucide-react-nativ
 import { supabase } from '../../../lib/supabase';
 import { Stack } from 'expo-router';
 
+interface PlayerItem {
+    id: string;
+    first_name: string;
+    last_name: string;
+    number: number;
+    position: string;
+    team?: { name: string };
+}
+
 export default function AdminPlayers() {
-    const [players, setPlayers] = useState<any[]>([]);
+    const [players, setPlayers] = useState<PlayerItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
-    const [editingItem, setEditingItem] = useState<any>(null);
+    const [editingItem, setEditingItem] = useState<PlayerItem | null>(null);
 
     // Form State
     const [firstName, setFirstName] = useState('');
@@ -56,26 +65,30 @@ export default function AdminPlayers() {
             // For this iteration, we'll just allow basic info.
         };
 
-        let error;
-        if (editingItem) {
-            const { error: err } = await supabase
-                .from('players')
-                .update(payload)
-                .eq('id', editingItem.id);
-            error = err;
-        } else {
-            const { error: err } = await supabase
-                .from('players')
-                .insert(payload); // Note: might fail if RLS or constraints require team_id
-            error = err;
-        }
+        try {
+            let error;
+            if (editingItem) {
+                const { error: err } = await supabase
+                    .from('players')
+                    .update(payload)
+                    .eq('id', editingItem.id);
+                error = err;
+            } else {
+                const { error: err } = await supabase
+                    .from('players')
+                    .insert(payload); // Note: might fail if RLS or constraints require team_id
+                error = err;
+            }
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
-        } else {
+            if (error) throw error;
+
             setModalVisible(false);
             fetchPlayers();
             resetForm();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
@@ -89,9 +102,15 @@ export default function AdminPlayers() {
                     text: "Supprimer",
                     style: "destructive",
                     onPress: async () => {
-                        const { error } = await supabase.from('players').delete().eq('id', id);
-                        if (error) Alert.alert('Erreur', error.message);
-                        else fetchPlayers();
+                        try {
+                            const { error } = await supabase.from('players').delete().eq('id', id);
+                            if (error) throw error;
+                            fetchPlayers();
+                        } catch (error: unknown) {
+                            console.error(error);
+                            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                            Alert.alert('Erreur', msg);
+                        }
                     }
                 }
             ]
@@ -106,7 +125,7 @@ export default function AdminPlayers() {
         setPosition('');
     };
 
-    const openEditor = (item?: any) => {
+    const openEditor = (item?: PlayerItem) => {
         if (item) {
             setEditingItem(item);
             setFirstName(item.first_name);
@@ -119,7 +138,7 @@ export default function AdminPlayers() {
         setModalVisible(true);
     };
 
-    const renderItem = ({ item }: { item: any }) => (
+    const renderItem = ({ item }: { item: PlayerItem }) => (
         <View style={styles.card}>
             <View style={styles.avatar}>
                 <Typo weight="bold" color={Colors.white}>{item.first_name?.[0]}{item.last_name?.[0]}</Typo>

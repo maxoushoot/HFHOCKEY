@@ -8,11 +8,19 @@ import { Plus, Trash2, Edit2, X, Save } from 'lucide-react-native';
 import { supabase } from '../../../lib/supabase';
 import { Stack } from 'expo-router';
 
+interface NewsItem {
+    id: string;
+    title: string;
+    content: string;
+    image_url?: string;
+    published_at: string;
+}
+
 export default function AdminNews() {
-    const [news, setNews] = useState<any[]>([]);
+    const [news, setNews] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
-    const [editingItem, setEditingItem] = useState<any>(null);
+    const [editingItem, setEditingItem] = useState<NewsItem | null>(null);
 
     // Form State
     const [title, setTitle] = useState('');
@@ -43,26 +51,30 @@ export default function AdminNews() {
 
         const payload = { title, content, image_url: imageUrl, updated_at: new Date() };
 
-        let error;
-        if (editingItem) {
-            const { error: err } = await supabase
-                .from('news')
-                .update(payload)
-                .eq('id', editingItem.id);
-            error = err;
-        } else {
-            const { error: err } = await supabase
-                .from('news')
-                .insert(payload);
-            error = err;
-        }
+        try {
+            let error;
+            if (editingItem) {
+                const { error: err } = await supabase
+                    .from('news')
+                    .update(payload)
+                    .eq('id', editingItem.id);
+                error = err;
+            } else {
+                const { error: err } = await supabase
+                    .from('news')
+                    .insert(payload);
+                error = err;
+            }
 
-        if (error) {
-            Alert.alert('Erreur', error.message);
-        } else {
+            if (error) throw error;
+
             setModalVisible(false);
             fetchNews();
             resetForm();
+        } catch (error: unknown) {
+            console.error(error);
+            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+            Alert.alert('Erreur', msg);
         }
     };
 
@@ -76,16 +88,22 @@ export default function AdminNews() {
                     text: "Supprimer",
                     style: "destructive",
                     onPress: async () => {
-                        const { error } = await supabase.from('news').delete().eq('id', id);
-                        if (error) Alert.alert('Erreur', error.message);
-                        else fetchNews();
+                        try {
+                            const { error } = await supabase.from('news').delete().eq('id', id);
+                            if (error) throw error;
+                            fetchNews();
+                        } catch (error: unknown) {
+                            console.error(error);
+                            const msg = error instanceof Error ? error.message : "Erreur inconnue";
+                            Alert.alert('Erreur', msg);
+                        }
                     }
                 }
             ]
         );
     };
 
-    const openEditor = (item?: any) => {
+    const openEditor = (item?: NewsItem) => {
         if (item) {
             setEditingItem(item);
             setTitle(item.title);
@@ -104,7 +122,7 @@ export default function AdminNews() {
         setImageUrl('');
     };
 
-    const renderItem = ({ item }: { item: any }) => (
+    const renderItem = ({ item }: { item: NewsItem }) => (
         <View style={styles.card}>
             {item.image_url && <Image source={{ uri: item.image_url }} style={styles.cardImage} />}
             <View style={styles.cardContent}>
