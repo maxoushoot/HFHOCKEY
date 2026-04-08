@@ -1,9 +1,17 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "target": "ES2021",
+    "lib": ["ES2021"],
+    "moduleResolution": "Bundler",
+    "jsx": "react-native",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["react", "react-native", "jest"]
   },
   "exclude": [
+    "node_modules",
     "supabase/functions/**/*",
     "**/*.test.ts",
     "**/*.spec.ts",

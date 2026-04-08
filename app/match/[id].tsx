@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { LiquidContainer } from '../../components/ui/LiquidContainer';
@@ -16,12 +16,13 @@ import { MatchTabs } from '../../components/match/MatchTabs';
 import GameTimeline from '../../components/features/GameTimeline';
 import { MatchStats } from '../../components/match/MatchStats';
 import { MatchLineups } from '../../components/match/MatchLineups';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { VotingModal } from '../../components/modals/VotingModal';
 import { QuizModal } from '../../components/modals/QuizModal';
 import { useMatchData } from '../../hooks/useMatchData';
 import { useShallow } from 'zustand/react/shallow';
 import { MatchActionCard } from '../../components/hockey/MatchActionCard';
+import { useMatchDetailActions } from '../../hooks/useMatchDetailActions';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 export default function MatchDetailScreen() {
     const { id } = useLocalSearchParams();
@@ -33,32 +34,30 @@ export default function MatchDetailScreen() {
         gameEvents: state.gameEvents
     })));
     const { match, refreshing, onRefresh, mockEvents, mockStats } = useMatchData(id as string);
-    const [isVoteModalVisible, setIsVoteModalVisible] = useState(false);
-    const [isPredictionModalVisible, setIsPredictionModalVisible] = useState(false);
-    const [activeTab, setActiveTab] = useState('summary');
-    const [showMatchQuiz, setShowMatchQuiz] = useState(false);
-
-    const confettiRef = useRef<ConfettiCannon>(null);
 
     const hasVotedMVP = match ? !!mvpVotes[match.id] : false;
     const userPrediction = match ? predictions[match.id] : null;
+    const {
+        activeTab,
+        setActiveTab,
+        isVoteModalVisible,
+        setIsVoteModalVisible,
+        isPredictionModalVisible,
+        setIsPredictionModalVisible,
+        showMatchQuiz,
+        setShowMatchQuiz,
+        confettiRef,
+        onVoteMVP,
+        onSubmitPrediction,
+    } = useMatchDetailActions({
+        matchId: match?.id,
+        voteMVP,
+        submitPrediction,
+    });
+
     const isLive = match?.status === 'live';
     const isScheduled = match?.status === 'scheduled';
 
-    const onVoteMVP = (playerId: string) => {
-        if (!match) return;
-        voteMVP(match.id, playerId);
-        setTimeout(() => {
-            setIsVoteModalVisible(false);
-            setTimeout(() => confettiRef.current?.start(), 300);
-        }, 800);
-    };
-
-    const onSubmitPrediction = (homeScore: number, awayScore: number) => {
-        if (!match) return;
-        submitPrediction(match.id, homeScore, awayScore);
-        setTimeout(() => confettiRef.current?.start(), 500);
-    };
 
     if (!match) return <LiquidContainer><View /></LiquidContainer>;
 

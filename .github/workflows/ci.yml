@@ -23,8 +23,7 @@ jobs:
       run: npm ci || npm install # fallback si package-lock est out of sync
 
     - name: Typecheck
-      run: npx tsc --noEmit
-      continue-on-error: true # Not blocking at this stage of refactoring
+      run: npm run typecheck
       
     - name: Run Tests
       run: npm run test -- --passWithNoTests
