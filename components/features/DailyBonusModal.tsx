@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Typo } from '../ui/Typography';
 import { Colors } from '../../constants/Colors';
-import { Gift, X } from 'lucide-react-native';
+import { Gift } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withSequence, withDelay } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ModalBase } from '../ui/ModalBase';
 
 interface DailyBonusModalProps {
     visible: boolean;
@@ -12,8 +13,6 @@ interface DailyBonusModalProps {
     onClaim: () => void;
     onClose: () => void;
 }
-
-const { width } = Dimensions.get('window');
 
 export function DailyBonusModal({ visible, xpAmount, onClaim, onClose }: DailyBonusModalProps) {
     const scale = useSharedValue(0);
@@ -31,74 +30,54 @@ export function DailyBonusModal({ visible, xpAmount, onClaim, onClose }: DailyBo
             scale.value = 0;
             rotate.value = 0;
         }
-    }, [visible]);
+    }, [visible, rotate, scale]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }, { rotate: `${rotate.value}deg` }],
     }));
 
     return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="fade"
-            onRequestClose={onClose}
-        >
-            <View style={styles.overlay}>
-                <View style={styles.card}>
-                    <LinearGradient
-                        colors={[Colors.france.blue, Colors.france.blueDark]}
-                        style={styles.header}
-                    >
-                        <Animated.View style={[styles.iconContainer, animatedStyle]}>
-                            <Gift size={48} color={Colors.white} />
-                        </Animated.View>
-                        <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-                            <X size={20} color={Colors.white} />
-                        </TouchableOpacity>
-                    </LinearGradient>
+        <ModalBase visible={visible} onClose={onClose} showCloseButton={false}>
+            <View style={styles.card}>
+                <LinearGradient colors={[Colors.france.blue, Colors.france.blueDark]} style={styles.header}>
+                    <Animated.View style={[styles.iconContainer, animatedStyle]}>
+                        <Gift size={48} color={Colors.white} />
+                    </Animated.View>
+                    <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+                        <Typo variant="h4" weight="bold" color={Colors.white}>×</Typo>
+                    </TouchableOpacity>
+                </LinearGradient>
 
-                    <View style={styles.content}>
-                        <Typo variant="h2" weight="black" color={Colors.night} style={{ textAlign: 'center' }}>
-                            Bonus Quotidien !
+                <View style={styles.content}>
+                    <Typo variant="h2" weight="black" color={Colors.night} style={{ textAlign: 'center' }}>
+                        Bonus Quotidien !
+                    </Typo>
+                    <Typo variant="body" color={Colors.textSecondary} style={{ textAlign: 'center', marginTop: 8 }}>
+                        Reviens chaque jour pour gagner de l'XP et monter en niveau.
+                    </Typo>
+
+                    <View style={styles.rewardBox}>
+                        <Typo variant="h1" weight="black" color={Colors.france.blue} style={{ fontSize: 40 }}>
+                            +{xpAmount}
                         </Typo>
-                        <Typo variant="body" color={Colors.textSecondary} style={{ textAlign: 'center', marginTop: 8 }}>
-                            Reviens chaque jour pour gagner de l'XP et monter en niveau.
-                        </Typo>
-
-                        <View style={styles.rewardBox}>
-                            <Typo variant="h1" weight="black" color={Colors.france.blue} style={{ fontSize: 40 }}>
-                                +{xpAmount}
-                            </Typo>
-                            <Typo variant="h3" weight="bold" color={Colors.france.blue}>XP</Typo>
-                        </View>
-
-                        <TouchableOpacity style={styles.claimBtn} onPress={onClaim}>
-                            <Typo variant="h3" weight="bold" color={Colors.white}>
-                                Réclamer
-                            </Typo>
-                        </TouchableOpacity>
+                        <Typo variant="h3" weight="bold" color={Colors.france.blue}>XP</Typo>
                     </View>
+
+                    <TouchableOpacity style={styles.claimBtn} onPress={onClaim}>
+                        <Typo variant="h3" weight="bold" color={Colors.white}>Réclamer</Typo>
+                    </TouchableOpacity>
                 </View>
             </View>
-        </Modal>
+        </ModalBase>
     );
 }
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
     card: {
-        width: width - 48,
-        backgroundColor: Colors.white,
+        marginHorizontal: -24,
+        marginVertical: -24,
         borderRadius: 24,
         overflow: 'hidden',
-        alignItems: 'center',
     },
     header: {
         width: '100%',
@@ -138,7 +117,7 @@ const styles = StyleSheet.create({
         gap: 4,
         marginVertical: 24,
         padding: 16,
-        backgroundColor: Colors.france.blue + '10', // 10% opacity hex
+        backgroundColor: Colors.france.blue + '10',
         borderRadius: 16,
         width: '100%',
         justifyContent: 'center',
@@ -150,10 +129,5 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         width: '100%',
         alignItems: 'center',
-        shadowColor: Colors.france.blue,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6,
     },
 });
